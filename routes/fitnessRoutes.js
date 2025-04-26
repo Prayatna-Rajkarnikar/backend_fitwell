@@ -1,9 +1,13 @@
 import { Router } from "express";
-import { calculateCalories } from "../controllers/fitnessController.js";
+import {
+  calculateCalories,
+  getTotalCaloriesBurned,
+} from "../controllers/fitnessController.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = Router();
 
-// Route to calculate calories burned
-router.post("/calculateCalorie/:userId", calculateCalories);
+router.post("/calculateCalorie", authMiddleware, calculateCalories);
+router.get("/getTotalCaloriesBurned", authMiddleware, getTotalCaloriesBurned);
 
 export default router;

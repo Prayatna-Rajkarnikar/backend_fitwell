@@ -1,3 +1,5 @@
+import mongoose from "mongoose";
+
 import calorieModel from "../models/calorieRecordModel.js";
 import userModel from "../models/userModel.js";
 
@@ -16,7 +18,7 @@ const MET_VALUES = {
 
 export const calculateCalories = async (req, res) => {
   const { activity, durationHours } = req.body;
-  const { userId } = req.params;
+  const { id: userId } = req.user;
 
   if (!activity || !durationHours) {
     return res.status(400).json({ error: "All fields are required." });
@@ -53,5 +55,28 @@ export const calculateCalories = async (req, res) => {
     res
       .status(500)
       .json({ error: "Failed to calculate calories", details: err.message });
+  }
+};
+
+export const getTotalCaloriesBurned = async (req, res) => {
+  const { id: userId } = req.user;
+  try {
+    const totalCalories = await calorieModel.aggregate([
+      { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+      {
+        $group: {
+          _id: "$userId",
+          totalCaloriesBurned: { $sum: "$caloriesBurned" },
+        },
+      },
+    ]);
+
+    const total = totalCalories[0]?.totalCaloriesBurned || 0;
+
+    res.json({ totalCaloriesBurned: total });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Failed to fetch total calories", details: err.message });
   }
 };
