@@ -1,6 +1,6 @@
-import CalorieRecord from "../models/calorieRecordModel.js";
+import calorieModel from "../models/calorieRecordModel.js";
+import userModel from "../models/userModel.js";
 
-// MET_VALUES remains same
 const MET_VALUES = {
   running: 9.8,
   cycling: 7.5,
@@ -15,9 +15,10 @@ const MET_VALUES = {
 };
 
 export const calculateCalories = async (req, res) => {
-  const { activity, weightKg, durationHours, userId } = req.body;
+  const { activity, durationHours } = req.body;
+  const { userId } = req.params;
 
-  if (!activity || !weightKg || !durationHours) {
+  if (!activity || !durationHours) {
     return res.status(400).json({ error: "All fields are required." });
   }
 
@@ -26,10 +27,16 @@ export const calculateCalories = async (req, res) => {
     return res.status(400).json({ error: "Invalid activity provided." });
   }
 
-  const caloriesBurned = met * weightKg * durationHours;
-
   try {
-    const newRecord = await CalorieRecord.create({
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const weightKg = user.weightKg;
+    const caloriesBurned = met * weightKg * durationHours;
+
+    const newRecord = await calorieModel.create({
       userId,
       activity,
       MET: met,
@@ -43,6 +50,8 @@ export const calculateCalories = async (req, res) => {
       record: newRecord,
     });
   } catch (err) {
-    res.status(500).json({ error: "Failed to save record", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Failed to calculate calories", details: err.message });
   }
 };

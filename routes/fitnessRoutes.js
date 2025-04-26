@@ -4,6 +4,6 @@ import { calculateCalories } from "../controllers/fitnessController.js";
 const router = Router();
 
 // Route to calculate calories burned
-router.post("/calculate", calculateCalories);
+router.post("/calculateCalorie/:userId", calculateCalories);
 
 export default router;
