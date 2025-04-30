@@ -2,19 +2,7 @@ import mongoose from "mongoose";
 
 import calorieModel from "../models/calorieRecordModel.js";
 import userModel from "../models/userModel.js";
-
-const MET_VALUES = {
-  running: 9.8,
-  cycling: 7.5,
-  walking: 3.5,
-  swimming: 8.0,
-  hiking: 6.0,
-  jumping: 8.8,
-  dancing: 5.5,
-  yoga: 2.5,
-  weightlifting: 6.0,
-  aerobics: 7.3,
-};
+import metModel from "../models/metModel.js";
 
 export const calculateCalories = async (req, res) => {
   const { activity, durationHours } = req.body;
@@ -24,12 +12,19 @@ export const calculateCalories = async (req, res) => {
     return res.status(400).json({ error: "All fields are required." });
   }
 
-  const met = MET_VALUES[activity.toLowerCase()];
-  if (!met) {
-    return res.status(400).json({ error: "Invalid activity provided." });
-  }
-
   try {
+    // Get MET value from DB
+    const metEntry = await metModel.findOne({
+      activity: activity.toLowerCase(),
+    });
+    if (!metEntry) {
+      return res
+        .status(400)
+        .json({ error: "Invalid activity provided or MET not found." });
+    }
+
+    const met = metEntry.value;
+
     const user = await userModel.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found." });
