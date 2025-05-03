@@ -75,3 +75,37 @@ export const getTotalCaloriesBurned = async (req, res) => {
       .json({ error: "Failed to fetch total calories", details: err.message });
   }
 };
+
+export const editWeight = async (req, res) => {
+  const { weightKg } = req.body;
+  const { id: userId } = req.user;
+
+  if (!weightKg || isNaN(weightKg)) {
+    return res.status(400).json({ error: "Valid weight is required." });
+  }
+
+  try {
+    const updatedUser = await userModel.findByIdAndUpdate(
+      userId,
+      { weightKg },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    res.json({
+      message: "Weight updated successfully",
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        weightKg: updatedUser.weightKg,
+      },
+    });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Failed to update weight", details: err.message });
+  }
+};
