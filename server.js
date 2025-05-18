@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { dbConnect } from "./mongo/dbConnect.js";
 import authRoutes from "./routes/authRoutes.js";
 import fitnessRoutes from "./routes/fitnessRoutes.js";
+import waterRoutes from "./routes/waterRoutes.js";
 
 const app = express();
 dotenv.config();
@@ -15,6 +16,7 @@ dbConnect();
 
 app.use("/auth", authRoutes);
 app.use("/fitness", fitnessRoutes);
+app.use("/water", waterRoutes); 
 
 app.listen(process.env.PORT, () => {
   console.log(`Server running on port ${process.env.PORT}`);
