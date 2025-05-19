@@ -5,8 +5,9 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import { dbConnect } from "./mongo/dbConnect.js";
 import authRoutes from "./routes/authRoutes.js";
-import fitnessRoutes from "./routes/fitnessRoutes.js";
 import metRoutes from "./routes/metRoutes.js";
+import fitnessRoutes from "./routes/fitnessRoutes.js";
+import waterRoutes from "./routes/waterRoutes.js";
 
 const app = express();
 dotenv.config();
@@ -21,6 +22,7 @@ dbConnect();
 
 app.use("/auth", authRoutes);
 app.use("/fitness", fitnessRoutes);
+app.use("/water", waterRoutes); 
 app.use("/met", metRoutes);
 
 app.listen(process.env.PORT, () => {
