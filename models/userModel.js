@@ -6,11 +6,10 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   waterGoalMl: {
     type: Number,
-    default: 1000, // 1000ml = 1L
+    default: 1000,
   },
   weightKg: { type: Number, required: true, default: 0 },
 });
-
 
 const userModel = mongoose.model("User", userSchema);
 

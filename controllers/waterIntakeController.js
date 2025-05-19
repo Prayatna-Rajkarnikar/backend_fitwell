@@ -2,9 +2,10 @@ import WaterIntake from "../models/waterIntakeModel.js";
 import User from "../models/userModel.js";
 
 export const setWaterGoal = async (req, res) => {
-  const { userId, waterGoalMl } = req.body;
+  const { waterGoalMl } = req.body;
+  const { id: userId } = req.user;
 
-  if (!userId || !waterGoalMl)
+  if (!waterGoalMl)
     return res.status(400).json({ error: "User ID and water goal required" });
 
   try {
@@ -21,10 +22,13 @@ export const setWaterGoal = async (req, res) => {
 };
 
 export const addWaterIntake = async (req, res) => {
-  const { userId, amountMl } = req.body;
+  const { amountMl } = req.body;
+  const { id: userId } = req.user;
 
   if (!userId || !amountMl)
-    return res.status(400).json({ error: "User ID and intake amount (ml) required" });
+    return res
+      .status(400)
+      .json({ error: "User ID and intake amount (ml) required" });
 
   try {
     const record = await WaterIntake.create({ userId, amountMl });
@@ -33,14 +37,14 @@ export const addWaterIntake = async (req, res) => {
       record,
     });
   } catch (err) {
-    res.status(500).json({ error: "Failed to add intake", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Failed to add intake", details: err.message });
   }
 };
 
-
-
 export const getDailyIntake = async (req, res) => {
-  const { userId } = req.query;
+  const { id: userId } = req.user;
 
   if (!userId) return res.status(400).json({ error: "User ID is required" });
 
@@ -60,7 +64,10 @@ export const getDailyIntake = async (req, res) => {
       date: { $gte: startOfDay, $lte: endOfDay },
     });
 
-    const totalMl = intakeRecords.reduce((sum, record) => sum + record.amountMl, 0);
+    const totalMl = intakeRecords.reduce(
+      (sum, record) => sum + record.amountMl,
+      0
+    );
     const metGoal = totalMl >= goalMl;
 
     res.json({
@@ -71,6 +78,8 @@ export const getDailyIntake = async (req, res) => {
       records: intakeRecords,
     });
   } catch (err) {
-    res.status(500).json({ error: "Failed to fetch data", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Failed to fetch data", details: err.message });
   }
 };
