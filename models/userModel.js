@@ -3,11 +3,12 @@ import mongoose from "mongoose";
 const userSchema = new mongoose.Schema({
   name: String,
   email: { type: String, unique: true },
-  password: String,
+  password: { type: String, required: true },
   waterGoalMl: {
     type: Number,
     default: 1000, // 1000ml = 1L
   },
+  weightKg: { type: Number, required: true, default: 0 },
 });
 
 

@@ -1,35 +1,39 @@
-import CalorieRecord from "../models/calorieRecordModel.js";
+import mongoose from "mongoose";
 
-// MET_VALUES remains same
-const MET_VALUES = {
-  running: 9.8,
-  cycling: 7.5,
-  walking: 3.5,
-  swimming: 8.0,
-  hiking: 6.0,
-  jumping: 8.8,
-  dancing: 5.5,
-  yoga: 2.5,
-  weightlifting: 6.0,
-  aerobics: 7.3,
-};
+import calorieModel from "../models/calorieRecordModel.js";
+import userModel from "../models/userModel.js";
+import metModel from "../models/metModel.js";
 
 export const calculateCalories = async (req, res) => {
-  const { activity, weightKg, durationHours, userId } = req.body;
+  const { activity, durationHours } = req.body;
+  const { id: userId } = req.user;
 
-  if (!activity || !weightKg || !durationHours) {
+  if (!activity || !durationHours) {
     return res.status(400).json({ error: "All fields are required." });
   }
 
-  const met = MET_VALUES[activity.toLowerCase()];
-  if (!met) {
-    return res.status(400).json({ error: "Invalid activity provided." });
-  }
-
-  const caloriesBurned = met * weightKg * durationHours;
-
   try {
-    const newRecord = await CalorieRecord.create({
+    // Get MET value from DB
+    const metEntry = await metModel.findOne({
+      activity: activity.toLowerCase(),
+    });
+    if (!metEntry) {
+      return res
+        .status(400)
+        .json({ error: "Invalid activity provided or MET not found." });
+    }
+
+    const met = metEntry.value;
+
+    const user = await userModel.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    const weightKg = user.weightKg;
+    const caloriesBurned = met * weightKg * durationHours;
+
+    const newRecord = await calorieModel.create({
       userId,
       activity,
       MET: met,
@@ -43,6 +47,65 @@ export const calculateCalories = async (req, res) => {
       record: newRecord,
     });
   } catch (err) {
-    res.status(500).json({ error: "Failed to save record", details: err.message });
+    res
+      .status(500)
+      .json({ error: "Failed to calculate calories", details: err.message });
+  }
+};
+
+export const getTotalCaloriesBurned = async (req, res) => {
+  const { id: userId } = req.user;
+  try {
+    const totalCalories = await calorieModel.aggregate([
+      { $match: { userId: new mongoose.Types.ObjectId(userId) } },
+      {
+        $group: {
+          _id: "$userId",
+          totalCaloriesBurned: { $sum: "$caloriesBurned" },
+        },
+      },
+    ]);
+
+    const total = totalCalories[0]?.totalCaloriesBurned || 0;
+
+    res.json({ totalCaloriesBurned: total });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Failed to fetch total calories", details: err.message });
+  }
+};
+
+export const editWeight = async (req, res) => {
+  const { weightKg } = req.body;
+  const { id: userId } = req.user;
+
+  if (!weightKg || isNaN(weightKg)) {
+    return res.status(400).json({ error: "Valid weight is required." });
+  }
+
+  try {
+    const updatedUser = await userModel.findByIdAndUpdate(
+      userId,
+      { weightKg },
+      { new: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: "User not found." });
+    }
+
+    res.json({
+      message: "Weight updated successfully",
+      user: {
+        id: updatedUser._id,
+        name: updatedUser.name,
+        weightKg: updatedUser.weightKg,
+      },
+    });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Failed to update weight", details: err.message });
   }
 };

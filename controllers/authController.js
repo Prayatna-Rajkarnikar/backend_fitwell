@@ -28,6 +28,7 @@ export const registerUser = async (req, res) => {
 };
 
 export const loginUser = async (req, res) => {
+  console.log("Login");
   const { email, password } = req.body;
 
   try {
@@ -37,12 +38,50 @@ export const loginUser = async (req, res) => {
     const isMatch = bcrypt.compare(password, user.password);
     if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: "1h",
+    const token = jwt.sign(
+      {
+        email: user.email,
+        id: user._id,
+        name: user.name,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" }
+    );
+
+    // Set token in cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: false,
+      path: "/",
     });
 
     res.json({ message: "Login successful", token, user });
   } catch (err) {
     res.status(500).json({ error: "Login failed", details: err.message });
+  }
+};
+
+export const editWeight = async (req, res) => {
+  const { userId } = req.params;
+  const { weightKg } = req.body;
+
+  if (typeof weightKg !== "number" || weightKg < 0) {
+    return res.status(400).json({ message: "Invalid weight value." });
+  }
+
+  try {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { weightKg },
+      { new: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found." });
+    }
+
+    res.status(200).json({ message: "Weight updated successfully", user });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
