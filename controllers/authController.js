@@ -1,9 +1,39 @@
 import User from "../models/userModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import validator from "validator";
 
 export const registerUser = async (req, res) => {
-  const { name, email, password } = req.body;
+  let { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: "Please fill all the fields." });
+  }
+
+  name = name.trim();
+  email = email.trim();
+
+  // Validate name: letters and spaces only
+  const nameRegex = /^[A-Za-z\s]+$/;
+  if (!nameRegex.test(name)) {
+    return res
+      .status(400)
+      .json({ error: "Name can only contain letters and spaces" });
+  }
+
+  // Validate email format
+  if (!validator.isEmail(email)) {
+    return res.status(400).json({ error: "Invalid email format" });
+  }
+
+  // Password validation (at least 6 characters, contains at least one letter and one number)
+  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{6,}$/;
+  if (!passwordRegex.test(password)) {
+    return res.status(400).json({
+      error:
+        "Password must be at least 6 characters long and contain at least one letter and one number",
+    });
+  }
 
   try {
     const existingUser = await User.findOne({ email });
@@ -28,15 +58,26 @@ export const registerUser = async (req, res) => {
 };
 
 export const loginUser = async (req, res) => {
-  console.log("Login");
   const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required" });
+  }
+
+  if (!validator.isEmail(email)) {
+    return res.status(400).json({ error: "Invalid email format" });
+  }
 
   try {
     const user = await User.findOne({ email });
-    if (!user) return res.status(400).json({ error: "Invalid credentials" });
+    if (!user) {
+      return res.status(400).json({ error: "Email doesnt exist." });
+    }
 
-    const isMatch = bcrypt.compare(password, user.password);
-    if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(400).json({ error: "Invalid credentials" });
+    }
 
     const token = jwt.sign(
       {
@@ -48,7 +89,6 @@ export const loginUser = async (req, res) => {
       { expiresIn: "1h" }
     );
 
-    // Set token in cookie
     res.cookie("token", token, {
       httpOnly: true,
       secure: false,

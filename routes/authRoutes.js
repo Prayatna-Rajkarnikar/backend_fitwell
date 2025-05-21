@@ -4,13 +4,14 @@ import {
   loginUser,
   editWeight,
 } from "../controllers/authController.js";
-import { getUserDailyReport } from "../controllers/reportController.js";
+import { getUserAllLogs } from "../controllers/reportController.js";
+import { authMiddleware } from "../middleware/authMiddleware.js";
 
 const router = Router();
 router.post("/register", registerUser);
 
 router.post("/login", loginUser);
 router.put("/updateWeight/:userId", editWeight);
-router.get("/report/:userId", getUserDailyReport);
+router.get("/report", authMiddleware, getUserAllLogs);
 
 export default router;

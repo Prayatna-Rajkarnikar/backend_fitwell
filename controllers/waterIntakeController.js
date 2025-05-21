@@ -83,3 +83,31 @@ export const getDailyIntake = async (req, res) => {
       .json({ error: "Failed to fetch data", details: err.message });
   }
 };
+
+export const resetDailyIntake = async (req, res) => {
+  const { id: userId } = req.user;
+
+  if (!userId) return res.status(400).json({ error: "User ID is required" });
+
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+  const endOfDay = new Date();
+  endOfDay.setHours(23, 59, 59, 999);
+
+  try {
+    // Delete all water intake records for this user for today
+    const result = await WaterIntake.deleteMany({
+      userId,
+      date: { $gte: startOfDay, $lte: endOfDay },
+    });
+
+    res.json({
+      message: "Daily water intake reset",
+      deletedCount: result.deletedCount,
+    });
+  } catch (err) {
+    res
+      .status(500)
+      .json({ error: "Failed to reset daily intake", details: err.message });
+  }
+};
